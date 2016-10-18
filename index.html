@@ -1,0 +1,317 @@
+<html>
+<meta charset="utf-8">
+<style>
+
+    body {
+        font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .point {
+        stroke: #000;
+    }
+
+    form {
+        margin-top: 25px;
+        text-align: center;
+
+    }
+
+    .slider {
+        width: 80%;
+        display: block;
+        margin: 0 auto;
+    }
+
+    output {
+        display: block;
+        margin: 25px auto;
+        font-size:2em;
+    }
+
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+    var GetInitStartTime = function () {
+
+
+        $.ajax({
+            url: 'http://localhost:8080/service/getInitStart',
+            type: 'GET',
+            dataType:'json',
+
+            success: function(data) {
+
+                var start =JSON.parse(JSON.stringify(data.stt));
+                document.getElementById("stt").value=start;
+                document.getElementById("valueSlider").innerHTML=start;
+                document.getElementById("valueSlider").value=start;
+
+                show();
+
+
+
+
+
+
+
+
+                //alert(JSON.stringify(data));
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+
+
+
+            }
+
+        });
+    };
+    GetInitStartTime();
+
+
+
+
+    var show = function () {
+        var start =parseInt(document.getElementById('valueSlider').value);
+
+
+        var end =start+parseInt(document.getElementById('gap').value);
+        svg.selectAll(".series").remove();
+        var data2 =[];
+
+
+        $.ajax({
+
+            url: 'http://localhost:8080/service/getData',
+            type: 'GET',
+            data: 'start='+start+'&end='+end, // or $('#myform').serializeArray()
+            dataType:'json',
+
+            success: function(data) {
+
+
+                var X=JSON.parse(JSON.stringify(data.map.X.myArrayList));
+
+                var Y=JSON.parse(JSON.stringify(data.map.Y.myArrayList));
+
+                for (i = 0; i < X.length; i++) {
+
+                    data2.push({x:X[i] ,y:Y[i]});
+
+                }
+
+
+
+
+                draw(data2);
+
+
+
+
+                //alert(JSON.stringify(data));
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+
+
+            }
+
+
+
+        });
+        var calendarTime=timeStampToCalendarDate(start);
+
+        document.getElementById("calenderDate").innerHTML=calendarTime;
+
+
+    };
+
+
+    var showNext =function () {
+        var currentStart = parseInt(document.getElementById('stt').value);
+        var duration = parseInt(document.getElementById('gap').value);
+        document.getElementById("stt").value =currentStart+duration;
+        show();
+
+
+    };
+    var showPrevious =function () {
+        var currentStart = parseInt(document.getElementById('stt').value);
+        var duration = parseInt(document.getElementById('gap').value);
+        document.getElementById("stt").value =currentStart-duration;
+        show();
+
+
+    };
+    var play =function () {
+        var currentStart = parseInt(document.getElementById('stt').value);
+        var duration = parseInt(document.getElementById('gap').value);
+        s=currentStart;
+        e =currentStart+duration;
+
+        while(true){
+            sleep(10000);
+            s+=1000;
+            document.getElementById("stt").value =s;
+            show();
+
+
+        }
+
+
+    };
+
+
+
+
+
+
+
+
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+            width = 1500 - margin.left - margin.right,
+            height = 700 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear()
+            .range([0, width]);
+
+    var y = d3.scale.linear()
+            .range([height, 0]);
+
+    var z = d3.scale.category10();
+
+    var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        // Compute the series names ("y1", "y2", etc.) from the loaded CSV.
+
+
+        // Map the data to an array of arrays of {x, y} tuples.
+
+    var draw=function (data) {
+
+
+
+
+        var seriesNames = d3.keys(data[0])
+                .filter(function(d) { return d !== "x"; })
+                .sort();
+
+
+        var series = seriesNames.map(function(series) {
+            return data.map(function(d) {
+                return {x: +parseInt(d.x), y: +parseInt(d.y)};
+            });
+        });
+
+        // Compute the scales’ domains.
+        x.domain(d3.extent([-71,40])).nice();
+        y.domain(d3.extent([4,65])).nice();
+
+        // Add the x-axis.
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.svg.axis().scale(x).orient("bottom"));
+
+        // Add the y-axis.
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(d3.svg.axis().scale(y).orient("left"));
+
+        // Add the points!
+
+        svg.selectAll(".series")
+                .data(series)
+                .enter().append("g")
+                .attr("class", "series")
+                .style("fill", function(d, i) { return z(i); })
+                .selectAll(".point")
+                .data(function(d) { return d; })
+                .enter().append("circle")
+                .attr("class", "point")
+                .attr("r", 4.5)
+                .attr("cx", function(d) {
+
+                    return x(parseInt(d.x));})
+                .attr("cy", function(d) {
+                    return y(parseInt(d.y)); });
+
+    };
+    function sleep(milliseconds) {
+        var start = new Date().getTime();
+        for (var i = 0; i < 1e7; i++) {
+            if ((new Date().getTime() - start) > milliseconds){
+                break;
+            }
+        }
+    }
+    function outputUpdate(num) {
+        document.querySelector('#output').value = num;
+        show();
+    }
+    function changeStep() {
+        document.getElementById("valueSlider").step =document.getElementById("gap").value;
+    }
+    function timeStampToCalendarDate(time) {
+
+        var date = new Date(parseInt(time));
+        var Months =["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        return date.getFullYear()+" "+Months[date.getMonth()]+" "+date.getDate()+"      "+date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
+    }
+
+
+</script>
+<div>
+
+    <input class="slider" type="range" id="valueSlider" value="" step="5000" min="01170000853070" max="01172715042247" oninput="outputUpdate(value)">
+    <output for=value id="output"></output>
+    <output id="calenderDate"></output>
+    </br>
+
+    <label for="stt">Starting Time</label>
+    <input id="stt" name="stt">
+
+    </br></br></br></br>
+    <label for="gap">Select Duration</label>
+    <p id="try"></p>
+    <select id="gap" name="gap" onclick="changeStep()">
+        <option value=5000>5s</option>
+        <option value=15000>15s</option>
+        <option value=30000>30s</option>
+        <option value=60000>1min</option>
+        <option value=300000>5min</option>
+        <option value=600000>10min</option>
+    </select>
+    </br></br></br>
+    <button onclick="show() "style="align-content: center">Show</button>
+
+    </br></br></br>
+    <button onclick="showPrevious()" style="align-content: center">Previous</button>
+    <button onclick="showNext()" style="align-content: center">Next</button>
+    <button onclick="" >Play</button>
+
+
+</div>
+
+</body>
+<script>;
+
+
+
+</script>
+</html>
