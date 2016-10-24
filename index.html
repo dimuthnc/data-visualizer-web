@@ -53,8 +53,43 @@
 
                 var start =JSON.parse(JSON.stringify(data.stt));
                 document.getElementById("stt").value=start;
-                document.getElementById("valueSlider").innerHTML=start;
-                document.getElementById("valueSlider").value=start;
+                var valueSlider =document.getElementById("valueSlider");
+                valueSlider.innerHTML=start;
+                valueSlider.value=start;
+                valueSlider.min=parseInt(start);
+
+
+
+
+
+
+
+
+
+                //alert(JSON.stringify(data));
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+
+
+
+            }
+
+        });
+    };
+    var GetEndTime = function () {
+
+
+        $.ajax({
+            url: 'http://localhost:8080/service/getEndTime',
+            type: 'GET',
+            dataType:'json',
+
+            success: function(data) {
+
+                var end =JSON.parse(JSON.stringify(data.stt));
+
+                document.getElementById("valueSlider").max =end;
 
                 show();
 
@@ -77,16 +112,19 @@
         });
     };
     GetInitStartTime();
+    GetEndTime();
 
 
 
 
     var show = function () {
-        var start =parseInt(document.getElementById('valueSlider').value);
+
+        var start = parseInt(document.getElementById('stt').value);
+        document.getElementById('valueSlider').value=start;
 
 
         var end =start+parseInt(document.getElementById('gap').value);
-        svg.selectAll(".series").remove();
+
         var data2 =[];
 
 
@@ -128,13 +166,19 @@
 
 
 
-        });
-        var calendarTime=timeStampToCalendarDate(start);
 
-        document.getElementById("calenderDate").innerHTML=calendarTime;
+
+        });
+        setCalendarDate(start);
+
 
 
     };
+    function setCalendarDate(start){
+        var calendarTime=timeStampToCalendarDate(start);
+
+        document.getElementById("calenderDate").innerHTML=calendarTime;
+    }
 
 
     var showNext =function () {
@@ -153,23 +197,7 @@
 
 
     };
-    var play =function () {
-        var currentStart = parseInt(document.getElementById('stt').value);
-        var duration = parseInt(document.getElementById('gap').value);
-        s=currentStart;
-        e =currentStart+duration;
 
-        while(true){
-            sleep(10000);
-            s+=1000;
-            document.getElementById("stt").value =s;
-            show();
-
-
-        }
-
-
-    };
 
 
 
@@ -205,8 +233,9 @@
     var draw=function (data) {
 
 
+        svg.selectAll(".series").remove();
 
-
+        svg.selectAll(".g").remove();
         var seriesNames = d3.keys(data[0])
                 .filter(function(d) { return d !== "x"; })
                 .sort();
@@ -241,27 +270,22 @@
                 .attr("class", "series")
                 .style("fill", function(d, i) { return z(i); })
                 .selectAll(".point")
-                .data(function(d) { return d; })
+                .data(function(d) {
+
+                    return d; })
                 .enter().append("circle")
                 .attr("class", "point")
                 .attr("r", 4.5)
                 .attr("cx", function(d) {
-
-                    return x(parseInt(d.x));})
+                    return x(parseFloat(d.x));})
                 .attr("cy", function(d) {
-                    return y(parseInt(d.y)); });
+                    return y(parseFloat(d.y)); });
 
     };
-    function sleep(milliseconds) {
-        var start = new Date().getTime();
-        for (var i = 0; i < 1e7; i++) {
-            if ((new Date().getTime() - start) > milliseconds){
-                break;
-            }
-        }
-    }
+
     function outputUpdate(num) {
         document.querySelector('#output').value = num;
+        document.getElementById('stt').value =num;
         show();
     }
     function changeStep() {
@@ -273,29 +297,200 @@
         var Months =["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         return date.getFullYear()+" "+Months[date.getMonth()]+" "+date.getDate()+"      "+date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
     }
+    function sendFile() {
+        var file = document.getElementById('fileupload').files[0];
+        var fd = new FormData();
+        fd.append( 'file', file);
+        $.ajax({
+            url: 'http://localhost:8080/service/fileUpload',
+            data: fd,
+            processData: false,
+            contentType: false,
+            type: 'POST',
+
+
+
+            success: function(data) {
+               alert("file upload sucessfull");
+                GetInitStartTime();
+                GetEndTime();
+                show();
+
+
+
+
+
+
+
+
+
+
+                //alert(JSON.stringify(data));
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+
+
+
+
+            }
+
+        });
+
+
+
+    }
+    function  play(start,chunk) {
+        var start=parseInt(document.getElementById('stt').value);
+        var chunk =parseInt(document.getElementById('gap').value)
+        var end = parseInt(start) + (500*parseInt(chunk));
+
+       // var data2 =[];
+        var xList,yList,tList;
+
+
+        $.ajax({
+
+            url: 'http://localhost:8080/service/data/chunk',
+            type: 'GET',
+            data: 'start='+start+'&end='+end, // or $('#myform').serializeArray()
+            dataType:'json',
+
+            success: function(data) {
+                alert("data loaded");
+
+
+
+                xList=JSON.parse(JSON.stringify(data.X));
+
+
+                yList=JSON.parse(JSON.stringify(data.Y));
+
+                tList=JSON.parse(JSON.stringify(data.T));
+                for (var i = 0; i <= 500; i=i+1){
+
+                    var s=parseInt(start)+(i*1000);
+                    doScaledTimeout2(i,s,tList,chunk,xList,yList);
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                //alert(JSON.stringify(data));
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+
+
+            }
+
+
+
+        });
+
+
+
+
+
+
+    }
+    function showChunk(start,chunk,tList,xList,yList) {
+        var data2=[];
+        var e=parseInt(start)+parseInt(chunk);
+
+
+        for(i=0;i<tList.length;i++ ){
+
+
+            if(parseInt(tList[i])<e && parseInt(tList[i])>parseInt(start)){
+                data2.push({x:xList[i] ,y:yList[i]});
+
+
+            }
+
+
+
+
+
+
+
+        }
+
+
+        return data2;
+
+
+    }
+    function easyPlay() {
+
+
+        for (var i = 1; i <= 10; ++i)
+            doScaledTimeout(i);
+    }
+
+
+    function doScaledTimeout(i) {
+        setTimeout(function() {
+            document.getElementById('stt').value=parseInt(document.getElementById('stt').value)+1000;
+            show();
+
+        }, i * 500);
+    }
+    function doScaledTimeout2(j,start,tList,chunk,xList,yList) {
+        setTimeout(function() {
+            document.getElementById('stt').value=start;
+            document.getElementById('output').value=start;
+            setCalendarDate(start);
+
+            var data2=showChunk(start,chunk,tList,xList,yList);
+
+            draw(data2);
+
+
+        }, j * 500);
+    }
+
+
+
+
+
 
 
 </script>
 <div>
 
-    <input class="slider" type="range" id="valueSlider" value="" step="5000" min="01170000853070" max="01172715042247" oninput="outputUpdate(value)">
+    <input class="slider" type="range" id="valueSlider" value="" step="1000" min="01170000853070" max="01172715042247" oninput="outputUpdate(value)">
     <output for=value id="output"></output>
     <output id="calenderDate"></output>
     </br>
 
     <label for="stt">Starting Time</label>
-    <input id="stt" name="stt">
+    <input id="stt" name="stt" onchange="show()">
 
     </br></br></br></br>
     <label for="gap">Select Duration</label>
     <p id="try"></p>
     <select id="gap" name="gap" onclick="changeStep()">
+        <option value=1000>1s</option>
         <option value=5000>5s</option>
         <option value=15000>15s</option>
         <option value=30000>30s</option>
         <option value=60000>1min</option>
         <option value=300000>5min</option>
         <option value=600000>10min</option>
+        <option value=3600000>1hour</option>
     </select>
     </br></br></br>
     <button onclick="show() "style="align-content: center">Show</button>
@@ -303,10 +498,16 @@
     </br></br></br>
     <button onclick="showPrevious()" style="align-content: center">Previous</button>
     <button onclick="showNext()" style="align-content: center">Next</button>
-    <button onclick="" >Play</button>
+    <button onclick="play()" style="align-content: center">Play</button>
 
 
+</div >
+<div align="center">
+    <input id="fileupload" name="myfile" type="file" />
+    <Button  onclick="sendFile()" id="submit">Submit</Button>
 </div>
+
+
 
 </body>
 <script>;
