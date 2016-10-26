@@ -1,0 +1,30 @@
+Timestamps are the number of milliseconds since 0 hours, 0 minutes, 0
+seconds, January 1, 1970, Coordinated Universal Time, without including
+leap seconds.  That is, 1000*time(); in C.
+
+for example:
+
+  $ date ; date +"%s" ; todate -d
+  Mon Jul  2 14:54:42 EDT 2007
+  1183402482
+  1183402482861
+
+Note that this number is greater than 2^32, so you must be careful to use
+a 64-bit integer representation in your code:
+
+  lang  type
+  ----  ----------
+  gcc   long long
+  msvc  __int64
+  java  BigInteger
+  perl  use bignum;
+
+You can use SQL facilities to have the dates converted for you right 
+in the SQL statements. Here are two tricks to go between human-readable 
+and machine-readable formats:
+
+//convert '2006-06-22 04:00:00' to a timestamp:
+SELECT unix_timestamp('2006-06-22 04:00:00')*1000
+
+//The reverse of that (Note - losing sub-second precision):
+SELECT from_unixtime(FLOOR(1150210201234/3600000/24)*3600*24)

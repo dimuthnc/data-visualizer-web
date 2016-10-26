@@ -95,7 +95,7 @@ function  play(start,chunk) {
     var end = parseInt(start) + (500*parseInt(chunk));
 
     // var data2 =[];
-    var xList,yList,tList;
+    var xList,yList,tList,cList;
     $.ajax({
 
         url: 'http://localhost:8080/service/data/chunk',
@@ -108,9 +108,10 @@ function  play(start,chunk) {
             xList=JSON.parse(JSON.stringify(data.X));
             yList=JSON.parse(JSON.stringify(data.Y));
             tList=JSON.parse(JSON.stringify(data.T));
+            cList=JSON.parse(JSON.stringify(data.C));
             for (var i = 0; i <= 500; i=i+1){
                 var s=parseInt(start)+(i*1000);
-                doScaledTimeout2(i,s,tList,chunk,xList,yList);
+                doScaledTimeout(i,s,tList,chunk,xList,yList,cList);
             }
             //alert(JSON.stringify(data));
         },
@@ -120,14 +121,14 @@ function  play(start,chunk) {
     });
 }
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = 1500 - margin.left - margin.right,
-    height = 700 - margin.top - margin.bottom;
+    width = 1452 - margin.left - margin.right,
+    height = 744 - margin.top - margin.bottom;
 
 var x = d3.scale.linear()
     .range([0, width]);
 
 var y = d3.scale.linear()
-    .range([height, 0]);
+    .range([0,height]);
 
 var z = d3.scale.category10();
 
@@ -139,6 +140,12 @@ var svg = d3.select("body").append("svg")
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var image = d3.select("g").append("svg:image")
+    .attr("xlink:href", "IMG/floor-map.svg")
+    .attr("width", 1500)
+    .attr("height", 744)
+    .attr("x", 0)
+    .attr("y",-10);
 // Compute the series names ("y1", "y2", etc.) from the loaded CSV.
 // Map the data to an array of arrays of {x, y} tuples.
 var draw=function (data) {
@@ -149,7 +156,7 @@ var draw=function (data) {
         .sort();
     var series = seriesNames.map(function(series) {
         return data.map(function(d) {
-            return {x: +parseFloat(d.x), y: +parseFloat(d.y),c:100};
+            return {x: +parseFloat(d.x), y: +parseFloat(d.y),c:+parseFloat(d.c)};
         });
     });
     // Compute the scales’ domains.
@@ -179,8 +186,17 @@ var draw=function (data) {
         .enter().append("circle")
         .attr("class", "point")
         .style("fill", function (d) {
-        alert(d.c);
-        return d3.rgb(0,0,d.c);
+            if(d.c>170){
+                return d3.rgb(0,0,255);
+
+            }
+            else if(d.c>85){
+                return d3.rgb(76,0,153);
+            }
+            else{
+                return d3.rgb(255,0,0);
+            }
+
          })
         .attr("r", 4.5)
         .attr("cx", function(d) {
