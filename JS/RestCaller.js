@@ -172,6 +172,11 @@ var draw=function (data) {
     svg.append("g")
         .attr("class", "y axis")
         .call(d3.svg.axis().scale(y).orient("left"));
+
+    var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
     // Add the points!
     svg.selectAll(".series")
         .data(series)
@@ -191,9 +196,11 @@ var draw=function (data) {
 
             }
             else if(d.c>85){
+
                 return d3.rgb(76,0,153);
             }
             else{
+
                 return d3.rgb(255,0,0);
             }
 
@@ -202,7 +209,7 @@ var draw=function (data) {
         .attr("cx", function(d) {
             return x(parseFloat(d.x));})
         .attr("cy", function(d) {
-            return y(parseFloat(d.y));});
+            return y(parseFloat(d.y));})
 
 };
 function require(script) {
@@ -218,6 +225,119 @@ function require(script) {
         }
     });
 }
-var colors = d3.scale.linear()
-    .domain([5, 20])
-    .range(['#909FA3','#0087A7'])
+function  showDensity() {
+    var start = parseInt(document.getElementById('stt').value);
+    document.getElementById('valueSlider').value = start;
+    var end = start + parseInt(document.getElementById('gap').value);
+    var data2 = [];
+    $.ajax({
+        url: 'http://localhost:8080/service/data/density',
+        type: 'GET',
+        data: 'start=' + start + '&end=' + end, // or $('#myform').serializeArray()
+        dataType: 'json',
+        success: function (data) {
+            var X = JSON.parse(JSON.stringify(data.map.X.myArrayList));
+
+            var Y = JSON.parse(JSON.stringify(data.map.Y.myArrayList));
+
+            var D = JSON.parse(JSON.stringify(data.map.D.myArrayList));
+
+            for (i = 0; i < X.length; i++) {
+
+                data2.push({x: X[i], y: Y[i], c:parseInt(D[i])});
+            }
+            var max=D[0];
+            var min=D[0];
+            for (j=1;j<X.length;j++){
+                if(D[j]>max){
+                    max=D[j];
+                }
+                if(D[j]<min){
+                    min=D[j];
+                }
+            }
+            drawDensity(data2,max,min);
+            //alert(JSON.stringify(data));
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert(errorThrown);
+        }
+    });
+
+}
+var drawDensity=function (data,max,min) {
+
+    svg.selectAll(".series").remove();
+    svg.selectAll(".g").remove();
+    var seriesNames = d3.keys(data[0])
+        .filter(function(d) { return d !== "x"; })
+        .sort();
+    var series = seriesNames.map(function(series) {
+        return data.map(function(d) {
+            return {x: +parseFloat(d.x), y: +parseFloat(d.y),c:+(parseFloat(d.c)-min)*100/(max-min)};
+        });
+    });
+    // Compute the scales’ domains.
+    x.domain(d3.extent([-71,40])).nice();
+    y.domain(d3.extent([4,65])).nice();
+
+    // Add the x-axis.
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.svg.axis().scale(x).orient("bottom"));
+    // Add the y-axis.
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(d3.svg.axis().scale(y).orient("left"));
+    // Add the points!
+    svg.selectAll(".series")
+        .data(series)
+        .enter().append("g")
+        .attr("class", "series")
+
+
+        .selectAll(".point")
+        .data(function(d) {
+            return d; })
+        .enter().append("circle")
+        .attr("class", "point")
+        .style("fill", function (d) {
+            if(d.c>50){
+                return d3.rgb(250,0,0);
+
+            }
+            else if(d.c>40){
+                return d3.rgb(200,0,50);
+            }
+            else if(d.c>30){
+                return d3.rgb(150,0,100);
+            }
+            else if(d.c>20){
+                return d3.rgb(200,0,150);
+            }
+            else if(d.c>10){
+                return d3.rgb(100,0,200);
+            }
+            else if(d.c>5){
+                return d3.rgb(50,0,250);
+            }
+            else if(d.c==0){
+                return d3.rgb(255,255,255);
+            }
+            else{
+                return d3.rgb(0,0,250);
+            }
+
+
+
+
+        })
+        .attr("r", 6)
+        .attr("cx", function(d) {
+            return x(parseFloat(d.x));})
+        .attr("cy", function(d) {
+            return y(parseFloat(d.y));});
+
+};
+
