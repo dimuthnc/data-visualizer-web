@@ -2,52 +2,127 @@
 <meta charset="utf-8">
 <head>
 
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<link rel="stylesheet" type="text/css" href="CSS/style.css">
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <body>
+<link rel="stylesheet" href="lib/css/bootstrap.css">
+<script src="lib/js/bootstrap.js"></script>
 <script src="//d3js.org/d3.v3.min.js"></script>
-<script src="JS/RestCaller.js"></script>
-<script src="JS/graph.js"></script>
+<script src="js/RestCaller.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/traffic.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
 <script>
     GetInitStartTime();
     GetEndTime();
 </script>
-<div>
-    <input class="slider" type="range" id="valueSlider" value="" step="1000" min="01170000853070" max="01172715042247" oninput="outputUpdate(value)">
-    <output for=value id="output"></output>
-    <output id="calenderDate"></output>
-    </br>
+<div class="well">
+    <div  class="container row">
+            <div class="col-sm-4">
+                <h3 class="text-primary">Select Time</h3>
+                <input class="slider form-control input-sm" type="range" id="valueSlider" value="" step="1000" min="01170000853070" max="01172715042247" oninput="outputUpdate(value)">
+                <output for=value id="output" hidden="true"></output>
+                <output id="calenderDate"></output>
+                <div hidden="true">
+                    <label for="stt">Starting Time</label>
+                    <input id="stt" name="stt" onchange="show()">
+                </div>
+            </div>
 
-    <label for="stt">Starting Time</label>
-    <input id="stt" name="stt" onchange="show()">
+            <div class="col-sm-4">
+                <h3 class="text-primary">Select Duration</h3>
+                <select class="form-control input-sm-4" id="gap" name="gap" onclick="changeStep()">
+                    <option value=1000>1s</option>
+                    <option value=5000>5s</option>
+                    <option value=15000>15s</option>
+                    <option value=30000>30s</option>
+                    <option value=60000>1min</option>
+                    <option value=300000>5min</option>
+                    <option value=600000>10min</option>
+                    <option value=3600000>1hour</option>
+                    <option value=7200000>2hour</option>
+                    <option value=86400000>1day</option>
+                </select>
 
-    </br></br></br></br>
-    <label for="gap">Select Duration</label>
-    <p id="try"></p>
-    <select id="gap" name="gap" onclick="changeStep()">
-        <option value=1000>1s</option>
-        <option value=5000>5s</option>
-        <option value=15000>15s</option>
-        <option value=30000>30s</option>
-        <option value=60000>1min</option>
-        <option value=300000>5min</option>
-        <option value=600000>10min</option>
-        <option value=3600000>1hour</option>
-    </select>
-    </br></br></br>
-    <button onclick="show() "style="align-content: center">Show</button>
-    </br></br></br>
-    <button onclick="showPrevious()" style="align-content: center">Previous</button>
-    <button onclick="showNext()" style="align-content: center">Next</button>
-    <button onclick="play()" style="align-content: center">Play</button>
-    <button onclick="showDensity()" style="align-content: center">Show Density</button>
-</div >
-<div align="center">
-    <input id="fileupload" name="myfile" type="file" />
-    <Button  onclick="sendFile()" id="submit">Submit</Button>
+                </br>
+                <div class="btn-group">
+                    <button class="btn btn-info" onclick="show() "style="align-content: center">Show</button>
+                    <button class="btn btn-info" onclick="showPrevious()" style="align-content: center">Previous</button>
+                    <button class="btn btn-info" onclick="showNext()" style="align-content: center">Next</button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="play()" style="align-content: center">Play</button>
+                    <button class="btn btn-primary" onclick="showDensity()" style="align-content: center">Show Density</button>
+                    <button class="btn btn-primary" onclick="display()" style="align-content: center">Reset</button>
+                </div>
+
+            </div>
+
+
+
+            <div class="col-sm-4 " >
+                <h3 class="text-primary">Upload Data file</h3>
+                <input class="form-control input-sm-4  " id="fileupload" type="file" />
+                <Button  class="btn btn-info"  onclick="sendFile()" id="submit">Submit</Button>
+            </div>
+    </div>
+</div>
+<div class="well">
+
+</div>
+
+
+<div class="well">
+    <div class="container">
+        <div class="col-sm-4">
+            <div class="container">
+                <h3 class="text-primary">Typical Scenario</h3>
+                <select class="form-control input-sm-4  " id="time" name="time" >
+                    <option value=00>0AM</option>
+                    <option value=01>1AM</option>
+                    <option value=02>2AM</option>
+                    <option value=03>3AM</option>
+                    <option value=04>4AM</option>
+                    <option value=05>5AM</option>
+                    <option value=06>6AM</option>
+                    <option value=07>7AM</option>
+                    <option value=08>8AM</option>
+                    <option value=09>9AM</option>
+                    <option value=10>10AM</option>
+                    <option value=11>11AM</option>
+                    <option value=12>12AM</option>
+                    <option value=13>1PM</option>
+                    <option value=14>2PM</option>
+                    <option value=15>3PM</option>
+                    <option value=16>4PM</option>
+                    <option value=17>5PM</option>
+                    <option value=18>6PM</option>
+                    <option value=19>7PM</option>
+                    <option value=20>8PM</option>
+                    <option value=21>9PM</option>
+                    <option value=22>10PM</option>
+                    <option value=23>11PM</option>
+                </select>
+                <select class="form-control input-sm-4  " id="day" name="day" >
+                    <option value=mon>Monday</option>
+                    <option value=tue>Tuesday</option>
+                    <option value=wed>Wednesday</option>
+                    <option value=thu>Thursday</option>
+                    <option value=fri>Friday</option>
+                    <option value=sat>Saturday</option>
+                    <option value=sun>Sunday</option>
+                </select>
+                <button class="btn btn-primary" onclick="showScene()">View Scenario</button>
+            </div>
+
+    </div>
+
+
+    </div>
 </div>
 </body>
-<script>;
-</script>
 </html>

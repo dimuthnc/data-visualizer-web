@@ -1,5 +1,8 @@
 require("//d3js.org/d3.v3.min.js");
-require("JS/graph.js");
+require("js/graph.js");
+require("js/traffic.js");
+require("//d3js.org/d3.v3.min.js");
+require("http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js");
 var GetInitStartTime = function () {
         $.ajax({
             url: 'http://localhost:8080/service/time/start',
@@ -20,7 +23,7 @@ var GetInitStartTime = function () {
             }
         });
     };
-    var GetEndTime = function () {
+var GetEndTime = function () {
         $.ajax({
             url: 'http://localhost:8080/service/time/end',
             type: 'GET',
@@ -63,7 +66,7 @@ var show = function () {
             alert(errorThrown);
         }
     });
-}
+};
 function sendFile() {
     var file = document.getElementById('fileupload').files[0];
     var fd = new FormData();
@@ -109,11 +112,14 @@ function  play(start,chunk) {
             yList=JSON.parse(JSON.stringify(data.Y));
             tList=JSON.parse(JSON.stringify(data.T));
             cList=JSON.parse(JSON.stringify(data.C));
-            for (var i = 0; i <= 500; i=i+1){
+            var i=0;
+            while(i<500){
                 var s=parseInt(start)+(i*1000);
                 doScaledTimeout(i,s,tList,chunk,xList,yList,cList);
+                i+=1;
             }
-            //alert(JSON.stringify(data));
+
+
         },
         error:function (jqXHR, textStatus, errorThrown) {
             alert(errorThrown);
@@ -121,7 +127,7 @@ function  play(start,chunk) {
     });
 }
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = 1452 - margin.left - margin.right,
+    width = 1400 - margin.left - margin.right,
     height = 744 - margin.top - margin.bottom;
 
 var x = d3.scale.linear()
@@ -130,10 +136,6 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
     .range([0,height]);
 
-var z = d3.scale.category10();
-
-var colorZ=d3.scale.linear()
-    .range([0,255]);
 
 var svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -141,14 +143,21 @@ var svg = d3.select("body").append("svg")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 var image = d3.select("g").append("svg:image")
-    .attr("xlink:href", "IMG/floor-map.svg")
+    .attr("xlink:href", "img/floor.jpg")
     .attr("width", 1500)
-    .attr("height", 744)
-    .attr("x", 0)
-    .attr("y",-10);
+    .attr("height", 699)
+    .attr("x", -30)
+    .attr("y",-5);
+
+function display() {
+    window.location.reload();
+
+};
+
 // Compute the series names ("y1", "y2", etc.) from the loaded CSV.
 // Map the data to an array of arrays of {x, y} tuples.
 var draw=function (data) {
+
     svg.selectAll(".series").remove();
     svg.selectAll(".g").remove();
     var seriesNames = d3.keys(data[0])
@@ -167,7 +176,9 @@ var draw=function (data) {
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
-        .call(d3.svg.axis().scale(x).orient("bottom"));
+        .call(d3.svg.axis().scale(x).orient("bottom"))
+
+
     // Add the y-axis.
     svg.append("g")
         .attr("class", "y axis")
@@ -191,18 +202,10 @@ var draw=function (data) {
         .enter().append("circle")
         .attr("class", "point")
         .style("fill", function (d) {
-            if(d.c>170){
-                return d3.rgb(0,0,255);
-
+            if(isNaN(d.c)){
+                return colorRed(50);
             }
-            else if(d.c>85){
-
-                return d3.rgb(76,0,153);
-            }
-            else{
-
-                return d3.rgb(255,0,0);
-            }
+           return d3.rgb(255,d.c*255/100,d.c*255/100);
 
          })
         .attr("r", 4.5)
@@ -233,7 +236,7 @@ function  showDensity() {
     $.ajax({
         url: 'http://localhost:8080/service/data/density',
         type: 'GET',
-        data: 'start=' + start + '&end=' + end, // or $('#myform').serializeArray()
+        data: 'start=' + parseInt(document.getElementById('stt').value) + '&end=' +(parseInt(document.getElementById('stt').value)+ parseInt(document.getElementById('gap').value)), // or $('#myform').serializeArray()
         dataType: 'json',
         success: function (data) {
             var X = JSON.parse(JSON.stringify(data.map.X.myArrayList));
@@ -242,9 +245,11 @@ function  showDensity() {
 
             var D = JSON.parse(JSON.stringify(data.map.D.myArrayList));
 
+            var ID = JSON.parse(JSON.stringify(data.map.ID.myArrayList));
             for (i = 0; i < X.length; i++) {
 
-                data2.push({x: X[i], y: Y[i], c:parseInt(D[i])});
+
+                data2.push({x: X[i], y: Y[i], c:parseInt(D[i]), id:ID[i]});
             }
             var max=D[0];
             var min=D[0];
@@ -264,17 +269,17 @@ function  showDensity() {
         }
     });
 
-}
+};
 var drawDensity=function (data,max,min) {
 
     svg.selectAll(".series").remove();
     svg.selectAll(".g").remove();
     var seriesNames = d3.keys(data[0])
-        .filter(function(d) { return d !== "x"; })
+        .filter(function(d) { return d !== "x" && d!=="c" && d!="id"; })
         .sort();
     var series = seriesNames.map(function(series) {
         return data.map(function(d) {
-            return {x: +parseFloat(d.x), y: +parseFloat(d.y),c:+(parseFloat(d.c)-min)*100/(max-min)};
+            return {x: +parseFloat(d.x), y: +parseFloat(d.y),c:+(parseFloat(d.c)-min)*100/(max-min), id:parseInt(d.id)};
         });
     });
     // Compute the scales’ domains.
@@ -303,41 +308,175 @@ var drawDensity=function (data,max,min) {
         .enter().append("circle")
         .attr("class", "point")
         .style("fill", function (d) {
-            if(d.c>50){
-                return d3.rgb(250,0,0);
-
-            }
-            else if(d.c>40){
-                return d3.rgb(200,0,50);
-            }
-            else if(d.c>30){
-                return d3.rgb(150,0,100);
-            }
-            else if(d.c>20){
-                return d3.rgb(200,0,150);
-            }
-            else if(d.c>10){
-                return d3.rgb(100,0,200);
-            }
-            else if(d.c>5){
-                return d3.rgb(50,0,250);
-            }
-            else if(d.c==0){
+            if(d.c==0){
                 return d3.rgb(255,255,255);
             }
-            else{
-                return d3.rgb(0,0,250);
+            else if(d.c>20){
+                return colorRed(d.c);
             }
+            else if(d.c>10){
+                return colorBlue(d.c);
+            }
+            else if(d.c>=0){
+                return colorGreen(d.c);
+            }
+            else{
+                return d3.rgb(255,255,255);
+            }
+
+
 
 
 
 
         })
-        .attr("r", 6)
+        .on("mouseover", function(d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html((d.c).toFixed(2) )
+                .style("left", (x(parseInt(d.x)) + "px"))
+                .style("top", (y(parseInt(d.y)) + "px"));
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        })
+        .attr("r", 4.5)
         .attr("cx", function(d) {
             return x(parseFloat(d.x));})
         .attr("cy", function(d) {
-            return y(parseFloat(d.y));});
+            return y(parseFloat(d.y));})
+        .on("click",function (d){
+            var id=d.id;
+            getFrequency(id);
+        });
 
 };
+
+function  getFrequency(id) {
+
+    var start = parseInt(document.getElementById('stt').value);
+    document.getElementById('valueSlider').value = start;
+    var gap = parseInt(document.getElementById('gap').value);
+    var data1 = [];
+    $.ajax({
+        url:'http://localhost:8080/service/data/count',
+        type: 'GET',
+        data: 'start=' + start + '&gap=' + gap + '&sensor=' + id, // or $('#myform').serializeArray()
+        dataType: 'json',
+        success: function (data) {
+            var count = JSON.parse(JSON.stringify(data.map.Count.myArrayList));
+            for (i = 0; i < count.length; i++) {
+                var gap = parseInt(document.getElementById('gap').value);
+
+
+                data1.push({x: tsToCal(gap,(gap*i)+start+(gap/2.0)), y: count[i]});
+            }
+            var seriesNames = d3.keys(data[0])
+                .filter(function(d) { return d !== "x" && d!=="c" && d!="id"; })
+                .sort();
+            var series = seriesNames.map(function(series) {
+                return data.map(function(d) {
+                    return {x: +i, y: d.y};
+                });
+            });
+            var stt = parseInt(document.getElementById("stt").value);
+            var gap = parseInt(document.getElementById("gap").value);
+
+            d3.select("#barChart").remove();
+            var margin = {top: 40, right: 20, bottom: 30, left: 40},
+                width = 960 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+
+
+
+            var x = d3.scale.ordinal()
+                .rangeRoundBands([0, width], .1);
+
+            var y = d3.scale.linear()
+                .range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+
+
+
+
+            var tip = d3.tip()
+                .attr('class', 'd3-tip')
+                .offset([-10, 0])
+                .html(function(d) {
+                    return "<strong>Frequency:</strong> <span style='color:red'>" + d.y + "</span>";
+                });
+
+            var svg2 = d3.select("body").append("svg")
+                .attr("id","barChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg2.call(tip);
+
+
+                x.domain(data1.map(function(d) {
+
+                    return d.x; }));
+
+                y.domain([0, d3.max(data1, function(d) {
+
+                    return d.y; })]);
+                svg2.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xAxis);
+
+                svg2.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                    .text("Frequency");
+
+                svg2.selectAll(".bar")
+                    .data(data1)
+                    .enter().append("rect")
+                    .attr("class", "bar")
+                    .attr("x", function(d) {return x(d.x); })
+                    .attr("width", x.rangeBand())
+                    .attr("y", function(d) {return y(d.y); })
+                    .attr("height", function(d) { return height - y(d.y); })
+                    .on('mouseover', tip.show)
+                    .on('mouseout', tip.hide);
+
+
+
+            function type(d) {
+                d.y = +d.y;
+                return d;
+            }
+
+            document.getElementById( 'barChart' ).scrollIntoView();
+
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert(errorThrown);
+        }
+
+
+    });
+
+}
+
 
