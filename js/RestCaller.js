@@ -1,8 +1,7 @@
-require("//d3js.org/d3.v3.min.js");
+require("lib/js/d3.js");
 require("js/graph.js");
 require("js/traffic.js");
-require("//d3js.org/d3.v3.min.js");
-require("http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js");
+require("lib/js/d3tip.js");
 var GetInitStartTime = function () {
         $.ajax({
             url: 'http://localhost:8080/service/time/start',
@@ -71,6 +70,7 @@ function sendFile() {
     var file = document.getElementById('fileupload').files[0];
     var fd = new FormData();
     fd.append( 'file', file);
+
     $.ajax({
         url: 'http://localhost:8080/service/file/upload',
         data: fd,
@@ -91,6 +91,36 @@ function sendFile() {
             alert(errorThrown);
         }
     });
+}
+function getDimension() {
+    var url;
+    var value;
+
+
+
+    $.ajax({
+        url: 'http://localhost:8080/service/get/dimension',
+        type: 'GET',
+        dataType: 'json',
+        success: function (data) {
+            Xmax = JSON.parse(JSON.stringify(data.maxX));
+            Ymax = JSON.parse(JSON.stringify(data.maxY));
+            Xmin = JSON.parse(JSON.stringify(data.minX));
+            Ymin = JSON.parse(JSON.stringify(data.minY));
+
+            x.domain(d3.extent([Xmin,Xmax])).nice();
+            y.domain(d3.extent([Ymin,Ymax])).nice();
+
+            return value;
+
+
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert(errorThrown);
+        }
+    })
+
+
 }
 function  play(start,chunk) {
     var start=parseInt(document.getElementById('stt').value);
@@ -126,36 +156,6 @@ function  play(start,chunk) {
         }
     });
 }
-var margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = 1400 - margin.left - margin.right,
-    height = 744 - margin.top - margin.bottom;
-
-var x = d3.scale.linear()
-    .range([0, width]);
-
-var y = d3.scale.linear()
-    .range([0,height]);
-
-
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-var image = d3.select("g").append("svg:image")
-    .attr("xlink:href", "img/floor.jpg")
-    .attr("width", 1500)
-    .attr("height", 699)
-    .attr("x", -30)
-    .attr("y",-5);
-
-function display() {
-    window.location.reload();
-
-};
-
-// Compute the series names ("y1", "y2", etc.) from the loaded CSV.
-// Map the data to an array of arrays of {x, y} tuples.
 var draw=function (data) {
 
     svg.selectAll(".series").remove();
@@ -169,8 +169,7 @@ var draw=function (data) {
         });
     });
     // Compute the scales’ domains.
-    x.domain(d3.extent([-71,40])).nice();
-    y.domain(d3.extent([4,65])).nice();
+
 
     // Add the x-axis.
     svg.append("g")
@@ -400,30 +399,25 @@ function  getFrequency(id) {
 
             var xAxis = d3.svg.axis()
                 .scale(x)
-                .orient("bottom")
+                .orient("bottom");
 
 
             var yAxis = d3.svg.axis()
                 .scale(y)
                 .orient("left");
-
-
-
-
-            var tip = d3.tip()
-                .attr('class', 'd3-tip')
-                .offset([-10, 0])
-                .html(function(d) {
-                    return "<strong>Frequency:</strong> <span style='color:red'>" + d.y + "</span>";
-                });
-
-            var svg2 = d3.select("body").append("svg")
+            var svg2 = d3.select("#modal_body").append("svg")
                 .attr("id","barChart")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var tip = d3.tip()
+                .attr('class', 'd3-tip')
+                .offset([-10, 0])
+                .html(function (d) {
+                    return d.y;
 
+                });
             svg2.call(tip);
 
 
@@ -467,7 +461,6 @@ function  getFrequency(id) {
                 return d;
             }
 
-            document.getElementById( 'barChart' ).scrollIntoView();
 
         },
         error: function (jqXHR, textStatus, errorThrown) {
@@ -475,8 +468,9 @@ function  getFrequency(id) {
         }
 
 
-    });
 
+});
+    $("#frequency_view").modal("show");
 }
 
 

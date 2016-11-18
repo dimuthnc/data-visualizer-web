@@ -86,7 +86,25 @@ function tsToCal(gap,time) {
     }
 
 }
+function display() {
+    window.location.reload();
 
+};
+function loadImage(x,y) {
+    var image = d3.select("g").append("svg:image")
+        .attr("xlink:href", "img/floor.jpg")
+        .attr("width", 1500)
+        .attr("height", 699)
+        .attr("x",x)
+        .attr("y",y);
+
+}
+function changeImage(x,y) {
+    imageX=imageX+x;
+    imageY=imageY+y;
+    loadImage(imageX,imageY);
+
+}
 colorData = d3.scale.linear().domain([10,0])
     .interpolate(d3.interpolateHcl)
     .range([d3.rgb(125,0,0),d3.rgb(255,0,0)]);
