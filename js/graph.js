@@ -9,6 +9,7 @@ var showNext =function () {
     var currentStart = parseInt(document.getElementById('stt').value);
     var duration = parseInt(document.getElementById('gap').value);
     document.getElementById("stt").value =currentStart+duration;
+    
     show();
 };
 var showPrevious =function () {

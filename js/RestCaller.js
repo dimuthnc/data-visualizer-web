@@ -97,7 +97,7 @@ function getDimension() {
     var value;
 
 
-
+    /*
     $.ajax({
         url: 'http://localhost:8080/service/get/dimension',
         type: 'GET',
@@ -118,8 +118,10 @@ function getDimension() {
         error: function (jqXHR, textStatus, errorThrown) {
             alert(errorThrown);
         }
-    })
-
+        })
+        */
+    x.domain(d3.extent([-50,50])).nice();
+    y.domain(d3.extent([-100,100])).nice();
 
 }
 function  play(start,chunk) {
